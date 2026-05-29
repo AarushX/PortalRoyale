@@ -47,6 +47,8 @@ function fakeClickUp() {
 function config(overrides: Partial<Config> = {}): Config {
   return {
     nexusEventKey: "2024nyro",
+    frcTeamNumber: "",
+    seasonYear: 2026,
     clickup: { token: "pk_test", listId: "L1", workspaceId: "W1", channelId: "C1" },
     enableTasks: true,
     enableChannel: true,

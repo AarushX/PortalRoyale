@@ -14,9 +14,12 @@ export interface Env {
   NEXUS_TOKEN: string;
   CLICKUP_TOKEN: string;
   NEXUS_API_KEY?: string;
+  TBA_API_KEY?: string;
 
   // Vars (all strings — Workers vars are always strings)
   NEXUS_EVENT_KEY?: string;
+  FRC_TEAM_NUMBER?: string;
+  SEASON_YEAR?: string;
   CLICKUP_LIST_ID?: string;
   CLICKUP_WORKSPACE_ID?: string;
   CLICKUP_CHANNEL_ID?: string;
@@ -32,6 +35,8 @@ export interface Env {
 
 export interface Config {
   nexusEventKey: string;
+  frcTeamNumber: string;
+  seasonYear: number;
   clickup: {
     token: string;
     listId: string;
@@ -54,8 +59,11 @@ function boolVar(value: string | undefined, fallback = false): boolean {
 }
 
 export function loadConfig(env: Env): Config {
+  const year = parseInt(env.SEASON_YEAR ?? "", 10);
   return {
     nexusEventKey: env.NEXUS_EVENT_KEY ?? "",
+    frcTeamNumber: (env.FRC_TEAM_NUMBER ?? "").trim(),
+    seasonYear: Number.isFinite(year) ? year : new Date().getUTCFullYear(),
     clickup: {
       token: env.CLICKUP_TOKEN ?? "",
       listId: env.CLICKUP_LIST_ID ?? "",

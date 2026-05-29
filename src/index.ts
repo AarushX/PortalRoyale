@@ -19,6 +19,9 @@ import { NexusClient } from "./nexus/client.js";
 import { ClickUpClient } from "./clickup/client.js";
 import { SyncState } from "./sync/state.js";
 import { Dispatcher } from "./sync/dispatcher.js";
+import { TbaClient } from "./tba/client.js";
+import { pickActiveEvent, pickNextEvent, todayUtc } from "./tba/activeEvent.js";
+import type { Config } from "./env.js";
 import type { NexusRawPayload } from "./nexus/types.js";
 
 export default {
@@ -39,13 +42,59 @@ export default {
   async scheduled(_event: ScheduledController, env: Env): Promise<void> {
     const config = loadConfig(env);
     if (!config.enablePollBackup) return;
-    if (!env.NEXUS_API_KEY || !config.nexusEventKey) {
-      console.warn("Poll backup enabled but NEXUS_API_KEY/NEXUS_EVENT_KEY missing");
+    if (!env.NEXUS_API_KEY) {
+      console.warn("Poll backup enabled but NEXUS_API_KEY is missing");
       return;
     }
-    await runPoll(env, config.nexusEventKey, env.NEXUS_API_KEY);
+
+    const state = new SyncState(env.STATE);
+    const eventKey = await resolveEventKey(env, config, state);
+    if (!eventKey) {
+      console.warn(
+        "No event to poll: set NEXUS_EVENT_KEY, or FRC_TEAM_NUMBER + TBA_API_KEY for auto-discovery (and a team must be at an event today)",
+      );
+      return;
+    }
+    await runPoll(env, config, eventKey, env.NEXUS_API_KEY, state);
   },
 };
+
+/**
+ * Decide which Nexus event to poll. Prefers an explicit NEXUS_EVENT_KEY; if
+ * absent, auto-discovers the team's currently-active event via The Blue
+ * Alliance (cached in KV so TBA isn't queried every tick).
+ */
+async function resolveEventKey(
+  env: Env,
+  config: Config,
+  state: SyncState,
+): Promise<string | null> {
+  if (config.nexusEventKey) return config.nexusEventKey;
+  if (!config.frcTeamNumber || !env.TBA_API_KEY) return null;
+
+  const cached = await state.getCachedEventKey();
+  if (cached) return cached;
+
+  const events = await new TbaClient(env.TBA_API_KEY).getTeamEvents(
+    config.frcTeamNumber,
+    config.seasonYear,
+  );
+  const today = todayUtc();
+  const active = pickActiveEvent(events, today);
+  if (active) {
+    await state.setCachedEventKey(active.key);
+    console.log(`Auto-resolved active event for team ${config.frcTeamNumber}: ${active.key}`);
+    return active.key;
+  }
+
+  const next = pickNextEvent(events, today);
+  console.log(
+    next
+      ? `Team ${config.frcTeamNumber} has no event today; next is ${next.key} (${next.start_date})`
+      : `Team ${config.frcTeamNumber} has no upcoming events in ${config.seasonYear}`,
+  );
+  return null;
+}
 
 async function handleWebhook(request: Request, env: Env): Promise<Response> {
   if (!verifyNexusToken(request.headers, env.NEXUS_TOKEN)) {
@@ -74,9 +123,13 @@ async function handleWebhook(request: Request, env: Env): Promise<Response> {
   return json(result);
 }
 
-async function runPoll(env: Env, eventKey: string, apiKey: string): Promise<void> {
-  const config = loadConfig(env);
-  const state = new SyncState(env.STATE);
+async function runPoll(
+  env: Env,
+  config: Config,
+  eventKey: string,
+  apiKey: string,
+  state: SyncState,
+): Promise<void> {
   const dispatcher = new Dispatcher(
     config,
     new ClickUpClient(env.CLICKUP_TOKEN, { dryRun: config.dryRun }),
