@@ -1,0 +1,48 @@
+name = "nexus-clickup-integration"
+main = "src/index.ts"
+compatibility_date = "2024-05-12"
+
+# Workers KV namespace for dedup + match->task mapping + poll snapshot.
+# Create it with:  npx wrangler kv namespace create STATE
+# then paste the returned id below.
+[[kv_namespaces]]
+binding = "STATE"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+[vars]
+# --- Nexus ---
+# FRC event code, e.g. "2024nyro". Only needed for the poll backup.
+NEXUS_EVENT_KEY = ""
+
+# --- ClickUp targets ---
+# Numeric List id that parts-request / match tasks are created in.
+CLICKUP_LIST_ID = ""
+# Workspace (team) id and Chat channel id for channel messages.
+CLICKUP_WORKSPACE_ID = ""
+CLICKUP_CHANNEL_ID = ""
+
+# --- Feature toggles ("true"/"false") ---
+ENABLE_TASKS = "true"
+ENABLE_CHANNEL = "true"
+SYNC_MATCHES = "true"
+SYNC_ANNOUNCEMENTS = "true"
+SYNC_PARTS = "true"
+# When true, ClickUp calls are logged instead of sent. Great for first runs.
+DRY_RUN = "false"
+# When true, also mirror match status changes onto a per-match ClickUp task.
+MATCH_TASKS = "false"
+
+# --- Optional poll backup ---
+# Enable the scheduled poll of the Nexus REST API as a safety net for
+# missed webhook deliveries. Requires the NEXUS_API_KEY secret and the
+# [triggers] cron block below to be uncommented.
+ENABLE_POLL_BACKUP = "false"
+
+# Uncomment to run the poll backup once a minute (free-tier minimum interval).
+# [triggers]
+# crons = ["* * * * *"]
+
+# Secrets are NOT stored here. Set them with `wrangler secret put`:
+#   NEXUS_TOKEN     - shared secret you also configure on the Nexus push webhook
+#   CLICKUP_TOKEN   - ClickUp personal token (starts with pk_)
+#   NEXUS_API_KEY   - Nexus REST API key (only needed for the poll backup)
