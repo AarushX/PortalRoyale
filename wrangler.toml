@@ -10,6 +10,15 @@ binding = "STATE"
 id = "REPLACE_WITH_KV_NAMESPACE_ID"
 
 [vars]
+# --- Hosted multi-user web app (primary mode) ---
+# ClickUp OAuth app client id (create the app in ClickUp Settings > Apps).
+CLICKUP_CLIENT_ID = ""
+# Public base URL of this Worker, used to build the OAuth redirect URI, e.g.
+# "https://nexus-clickup-integration.<subdomain>.workers.dev". Leave blank to
+# infer from the request origin.
+APP_BASE_URL = ""
+
+# --- Legacy single-tenant mode (optional; only used if CLICKUP_TOKEN is set) ---
 # --- Nexus / event selection (poll backup only) ---
 # Option A: pin an explicit FRC event code, e.g. "2024nyro".
 NEXUS_EVENT_KEY = ""
@@ -48,7 +57,11 @@ ENABLE_POLL_BACKUP = "false"
 # crons = ["* * * * *"]
 
 # Secrets are NOT stored here. Set them with `wrangler secret put`:
-#   NEXUS_TOKEN     - shared secret you also configure on the Nexus push webhook
-#   CLICKUP_TOKEN   - ClickUp personal token (starts with pk_)
-#   NEXUS_API_KEY   - Nexus REST API key (only needed for the poll backup)
-#   TBA_API_KEY     - The Blue Alliance read key (only for team auto-discovery)
+#   Multi-user web app (primary):
+#     CLICKUP_CLIENT_SECRET - ClickUp OAuth app secret
+#     ENCRYPTION_KEY        - random 32+ char string; encrypts stored credentials at rest
+#   Legacy single-tenant mode (optional):
+#     NEXUS_TOKEN     - shared secret you also configure on the Nexus push webhook
+#     CLICKUP_TOKEN   - ClickUp personal token (starts with pk_)
+#     NEXUS_API_KEY   - Nexus REST API key (only needed for the poll backup)
+#     TBA_API_KEY     - The Blue Alliance read key (only for team auto-discovery)

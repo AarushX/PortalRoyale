@@ -33,6 +33,45 @@ Nexus REST poll ────┘   (KV dedup + match→task map)
 - **State:** Workers KV deduplicates events and remembers which task maps to a
   parts request / match, so resolutions and status changes update the right task.
 
+## Two ways to run it
+
+1. **Hosted web app (multi-user, recommended).** Deploy once and share the URL.
+   Each user clicks **Sign in with ClickUp** (OAuth), picks their List + channel,
+   enters their team number, and gets a personal Nexus webhook URL + token. No
+   tokens to copy by hand. See *Hosted web app* below.
+2. **Single-tenant (one team).** Bake one ClickUp token + config into the Worker
+   as secrets/vars. Simplest for a single team. See *Single-tenant setup* below.
+
+## Hosted web app
+
+```bash
+npm install
+npx wrangler kv namespace create STATE     # paste the id into wrangler.toml
+```
+
+1. **Create a ClickUp OAuth app** — ClickUp avatar → *Settings* → *Apps* →
+   *Create new app*. Set the redirect URL to
+   `https://<your-worker>.workers.dev/oauth/clickup/callback`. You'll get a
+   **client id** and **secret**.
+2. **Configure** in `wrangler.toml` `[vars]`: set `CLICKUP_CLIENT_ID` and
+   `APP_BASE_URL` (`https://<your-worker>.workers.dev`).
+3. **Set secrets:**
+   ```bash
+   npx wrangler secret put CLICKUP_CLIENT_SECRET
+   npx wrangler secret put ENCRYPTION_KEY   # any random 32+ char string
+   ```
+4. **Deploy:** `npx wrangler deploy`, then open the Worker URL.
+
+Each user then: signs in with ClickUp → picks List + channel and enters their
+FRC team number (TBA / Nexus keys optional) → **Save** → copies the shown
+**webhook URL + Nexus-Token** into a Push webhook on their event's Nexus page.
+The **Send test** button posts a sample task/message to confirm wiring.
+
+Credentials are encrypted at rest (AES-GCM via `ENCRYPTION_KEY`) before being
+stored in KV. You are responsible for the credentials your deployment holds.
+
+## Single-tenant setup
+
 ## Prerequisites
 
 - A [Cloudflare account](https://dash.cloudflare.com/sign-up) (free).

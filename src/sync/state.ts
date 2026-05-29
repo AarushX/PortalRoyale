@@ -21,42 +21,54 @@ const AUTO_EVENT_TTL_SECONDS = 60 * 60 * 6;
 const SEEN_TTL_SECONDS = 60 * 60 * 24;
 
 export class SyncState {
-  constructor(private readonly kv: KVNamespace) {}
+  /**
+   * @param kv  the KV namespace binding
+   * @param namespace  per-connection prefix so multiple users' dedup/state
+   *   never collide. Defaults to "" (single-tenant / legacy behavior).
+   */
+  constructor(
+    private readonly kv: KVNamespace,
+    private readonly namespace = "",
+  ) {}
+
+  private key(suffix: string): string {
+    return this.namespace ? `u:${this.namespace}:${suffix}` : suffix;
+  }
 
   /** Returns true if this dedupeKey was already processed. */
   async isSeen(dedupeKey: string): Promise<boolean> {
-    return (await this.kv.get(SEEN_PREFIX + dedupeKey)) !== null;
+    return (await this.kv.get(this.key(SEEN_PREFIX + dedupeKey))) !== null;
   }
 
   async markSeen(dedupeKey: string): Promise<void> {
-    await this.kv.put(SEEN_PREFIX + dedupeKey, "1", {
+    await this.kv.put(this.key(SEEN_PREFIX + dedupeKey), "1", {
       expirationTtl: SEEN_TTL_SECONDS,
     });
   }
 
   async getMatchTaskId(label: string): Promise<string | null> {
-    return this.kv.get(MATCH_TASK_PREFIX + label);
+    return this.kv.get(this.key(MATCH_TASK_PREFIX + label));
   }
 
   async setMatchTaskId(label: string, taskId: string): Promise<void> {
-    await this.kv.put(MATCH_TASK_PREFIX + label, taskId, {
+    await this.kv.put(this.key(MATCH_TASK_PREFIX + label), taskId, {
       expirationTtl: SEEN_TTL_SECONDS,
     });
   }
 
   async getPartsTaskId(id: string): Promise<string | null> {
-    return this.kv.get(PARTS_TASK_PREFIX + id);
+    return this.kv.get(this.key(PARTS_TASK_PREFIX + id));
   }
 
   async setPartsTaskId(id: string, taskId: string): Promise<void> {
-    await this.kv.put(PARTS_TASK_PREFIX + id, taskId, {
+    await this.kv.put(this.key(PARTS_TASK_PREFIX + id), taskId, {
       expirationTtl: SEEN_TTL_SECONDS,
     });
   }
 
   /** Dedup keys observed in the previous poll, used to compute deltas. */
   async getPollSnapshot(): Promise<Set<string>> {
-    const raw = await this.kv.get(SNAPSHOT_KEY);
+    const raw = await this.kv.get(this.key(SNAPSHOT_KEY));
     if (!raw) return new Set();
     try {
       return new Set(JSON.parse(raw) as string[]);
@@ -66,18 +78,18 @@ export class SyncState {
   }
 
   async setPollSnapshot(keys: Set<string>): Promise<void> {
-    await this.kv.put(SNAPSHOT_KEY, JSON.stringify([...keys]), {
+    await this.kv.put(this.key(SNAPSHOT_KEY), JSON.stringify([...keys]), {
       expirationTtl: SEEN_TTL_SECONDS,
     });
   }
 
   /** Cached team→active-event resolution, to avoid hitting TBA every tick. */
   async getCachedEventKey(): Promise<string | null> {
-    return this.kv.get(AUTO_EVENT_KEY);
+    return this.kv.get(this.key(AUTO_EVENT_KEY));
   }
 
   async setCachedEventKey(eventKey: string): Promise<void> {
-    await this.kv.put(AUTO_EVENT_KEY, eventKey, {
+    await this.kv.put(this.key(AUTO_EVENT_KEY), eventKey, {
       expirationTtl: AUTO_EVENT_TTL_SECONDS,
     });
   }

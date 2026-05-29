@@ -11,12 +11,17 @@ export interface Env {
   STATE: KVNamespace;
 
   // Secrets
-  NEXUS_TOKEN: string;
-  CLICKUP_TOKEN: string;
+  NEXUS_TOKEN?: string;
+  CLICKUP_TOKEN?: string;
   NEXUS_API_KEY?: string;
   TBA_API_KEY?: string;
+  // Multi-user web app secrets
+  CLICKUP_CLIENT_SECRET?: string;
+  ENCRYPTION_KEY?: string;
 
   // Vars (all strings — Workers vars are always strings)
+  CLICKUP_CLIENT_ID?: string;
+  APP_BASE_URL?: string;
   NEXUS_EVENT_KEY?: string;
   FRC_TEAM_NUMBER?: string;
   SEASON_YEAR?: string;

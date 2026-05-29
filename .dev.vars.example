@@ -1,6 +1,11 @@
 # Copy to .dev.vars for local `wrangler dev`. DO NOT commit .dev.vars.
 # These mirror the secrets you set in production via `wrangler secret put`.
 
+# --- Hosted multi-user web app ---
+CLICKUP_CLIENT_SECRET="your-clickup-oauth-app-secret"
+ENCRYPTION_KEY="any-random-32-plus-char-string-change-me"
+
+# --- Legacy single-tenant mode (optional) ---
 NEXUS_TOKEN="choose-a-shared-secret"
 CLICKUP_TOKEN="pk_your_personal_token"
 # Only needed if you enable the poll backup:
