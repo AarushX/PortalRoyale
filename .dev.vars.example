@@ -5,3 +5,5 @@ NEXUS_TOKEN="choose-a-shared-secret"
 CLICKUP_TOKEN="pk_your_personal_token"
 # Only needed if you enable the poll backup:
 NEXUS_API_KEY="your-nexus-api-key"
+# Only needed for team auto-discovery (poll mode):
+TBA_API_KEY="your-tba-read-key"

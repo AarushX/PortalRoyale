@@ -10,9 +10,14 @@ binding = "STATE"
 id = "REPLACE_WITH_KV_NAMESPACE_ID"
 
 [vars]
-# --- Nexus ---
-# FRC event code, e.g. "2024nyro". Only needed for the poll backup.
+# --- Nexus / event selection (poll backup only) ---
+# Option A: pin an explicit FRC event code, e.g. "2024nyro".
 NEXUS_EVENT_KEY = ""
+# Option B (leave NEXUS_EVENT_KEY empty): auto-discover the event your team is
+# at via The Blue Alliance. Set just the team number; SEASON_YEAR defaults to
+# the current year. Requires the TBA_API_KEY secret.
+FRC_TEAM_NUMBER = ""
+SEASON_YEAR = ""
 
 # --- ClickUp targets ---
 # Numeric List id that parts-request / match tasks are created in.
@@ -46,3 +51,4 @@ ENABLE_POLL_BACKUP = "false"
 #   NEXUS_TOKEN     - shared secret you also configure on the Nexus push webhook
 #   CLICKUP_TOKEN   - ClickUp personal token (starts with pk_)
 #   NEXUS_API_KEY   - Nexus REST API key (only needed for the poll backup)
+#   TBA_API_KEY     - The Blue Alliance read key (only for team auto-discovery)

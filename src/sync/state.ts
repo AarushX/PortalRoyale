@@ -11,6 +11,10 @@ const SEEN_PREFIX = "seen:";
 const MATCH_TASK_PREFIX = "matchtask:";
 const PARTS_TASK_PREFIX = "partstask:";
 const SNAPSHOT_KEY = "poll:lastSeenKeys";
+const AUTO_EVENT_KEY = "auto:eventKey";
+
+// Re-resolve the team's active event from TBA at most a few times a day.
+const AUTO_EVENT_TTL_SECONDS = 60 * 60 * 6;
 
 // Seen markers expire after a day — an event spans hours, not days, and this
 // keeps KV from growing without bound.
@@ -64,6 +68,17 @@ export class SyncState {
   async setPollSnapshot(keys: Set<string>): Promise<void> {
     await this.kv.put(SNAPSHOT_KEY, JSON.stringify([...keys]), {
       expirationTtl: SEEN_TTL_SECONDS,
+    });
+  }
+
+  /** Cached team→active-event resolution, to avoid hitting TBA every tick. */
+  async getCachedEventKey(): Promise<string | null> {
+    return this.kv.get(AUTO_EVENT_KEY);
+  }
+
+  async setCachedEventKey(eventKey: string): Promise<void> {
+    await this.kv.put(AUTO_EVENT_KEY, eventKey, {
+      expirationTtl: AUTO_EVENT_TTL_SECONDS,
     });
   }
 }

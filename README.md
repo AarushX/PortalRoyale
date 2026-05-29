@@ -27,7 +27,9 @@ Nexus REST poll ────┘   (KV dedup + match→task map)
 
 - **Primary:** `POST /nexus/webhook` — validates the `Nexus-Token` header.
 - **Backup (optional):** a scheduled poll of the Nexus REST API for any missed
-  deliveries (off by default).
+  deliveries (off by default). In poll mode you can either pin an event code or
+  give just your **team number** and let the app auto-discover the event you're
+  currently at via [The Blue Alliance](https://www.thebluealliance.com/apidocs).
 - **State:** Workers KV deduplicates events and remembers which task maps to a
   parts request / match, so resolutions and status changes update the right task.
 
@@ -78,6 +80,8 @@ Check it's live: `curl https://<your-worker>.workers.dev/health`.
 | Var | Meaning |
 |---|---|
 | `NEXUS_EVENT_KEY` | FRC event code, e.g. `2024nyro` (poll backup only) |
+| `FRC_TEAM_NUMBER` | Team number — auto-discovers the active event via TBA when `NEXUS_EVENT_KEY` is empty |
+| `SEASON_YEAR` | Season year for auto-discovery (defaults to current year) |
 | `CLICKUP_LIST_ID` | List where tasks are created |
 | `CLICKUP_WORKSPACE_ID` / `CLICKUP_CHANNEL_ID` | Chat channel target |
 | `ENABLE_TASKS` / `ENABLE_CHANNEL` | Master switches for each destination |
@@ -86,8 +90,33 @@ Check it's live: `curl https://<your-worker>.workers.dev/health`.
 | `DRY_RUN` | Log ClickUp calls instead of sending them |
 | `ENABLE_POLL_BACKUP` | Enable the scheduled Nexus poll (also uncomment the `[triggers]` cron) |
 
-Secrets (`wrangler secret put`): `NEXUS_TOKEN`, `CLICKUP_TOKEN`, and
-`NEXUS_API_KEY` (poll backup only).
+Secrets (`wrangler secret put`): `NEXUS_TOKEN`, `CLICKUP_TOKEN`,
+`NEXUS_API_KEY` (poll backup only), and `TBA_API_KEY` (team auto-discovery only;
+get a read key at <https://www.thebluealliance.com/account>).
+
+### Zero-config-per-event poll mode (just a team number)
+
+To run the poll backup without maintaining event codes, leave `NEXUS_EVENT_KEY`
+empty and set:
+
+```toml
+# wrangler.toml
+ENABLE_POLL_BACKUP = "true"
+FRC_TEAM_NUMBER = "254"
+[triggers]
+crons = ["* * * * *"]
+```
+
+```bash
+npx wrangler secret put NEXUS_API_KEY
+npx wrangler secret put TBA_API_KEY
+```
+
+Each tick the Worker asks TBA which event team 254 is at *today* and polls that
+event (cached in KV for ~6h, so TBA isn't hit every minute). Note: webhook mode
+still needs the webhook enabled on the event's page in Nexus — there's no public
+API to register Nexus webhooks programmatically, so team auto-discovery applies
+to the poll path.
 
 ## Local development
 
